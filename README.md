@@ -1,10 +1,18 @@
+<div align="center">
+  <img src="logo.svg" alt="Virtual Optimizer" width="120" height="120">
+</div>
+
 # Virtual Optimizer
 
-**Next-Generation WordPress Performance — Page Caching, Frontend Optimization, and Core Web Vitals on Autopilot.**
+<p align="center">
+  <strong>Next-Generation WordPress Performance — Page Caching, Frontend Optimization, and Core Web Vitals on Autopilot.</strong>
+</p>
 
-[![PHP Version](https://img.shields.io/badge/PHP-7.4%2B-777BB4?logo=php)](https://php.net)
-[![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-21759B?logo=wordpress)](https://wordpress.org)
-[![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+<p align="center">
+  <a href="https://php.net"><img src="https://img.shields.io/badge/PHP-7.4%2B-777BB4?logo=php" alt="PHP Version"></a>
+  <a href="https://wordpress.org"><img src="https://img.shields.io/badge/WordPress-5.0%2B-21759B?logo=wordpress" alt="WordPress"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License"></a>
+</p>
 
 ## Description
 
