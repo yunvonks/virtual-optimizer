@@ -35,11 +35,26 @@ jobs:
         run: |
           PLUGIN_SLUG="virtual-optimizer"
           ZIP_NAME="$PLUGIN_SLUG-${{ steps.version.outputs.version }}.zip"
-          git archive HEAD --format=zip --prefix="$PLUGIN_SLUG/" -o "/tmp/archive.zip"
-          unzip -q "/tmp/archive.zip" -d "/tmp/build"
-          cp -r vendor "/tmp/build/$PLUGIN_SLUG/vendor"
+          BUILD_DIR="/tmp/build/$PLUGIN_SLUG"
+          mkdir -p "$BUILD_DIR"
+          rsync -a --delete \
+            --exclude='.git*' \
+            --exclude='.github' \
+            --exclude='bin' \
+            --exclude='node_modules' \
+            --exclude='tests' \
+            --exclude='docs' \
+            --exclude='composer.json' \
+            --exclude='composer.lock' \
+            --exclude='Makefile' \
+            --exclude='README.md' \
+            --exclude='*.zip' \
+            --exclude='phpunit.xml*' \
+            --exclude='.phpunit*' \
+            ./ "$BUILD_DIR/"
+          cp -r vendor "$BUILD_DIR/vendor"
           cd /tmp/build
-          zip -r "$ZIP_NAME" "$PLUGIN_SLUG" -x "*/.git/*" "*/composer.*" "*/README.md" > /dev/null 2>&1
+          zip -r "$ZIP_NAME" "$PLUGIN_SLUG" > /dev/null 2>&1
           mv "$ZIP_NAME" "$GITHUB_WORKSPACE/"
 
       - name: Generate changelog
