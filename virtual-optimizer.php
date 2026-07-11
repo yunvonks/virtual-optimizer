@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name: Virtual Optimizer
- * Plugin URI: https://github.com/justinirul/virtual-optimizer
+ * Plugin URI: https://github.com/yunvonks/virtual-optimizer
  * Description: Next-Generation WordPress Performance — Page Caching, Frontend Optimization, and Core Web Vitals on Autopilot.
  * Version: 1.0.0
  * Requires PHP: 7.4
