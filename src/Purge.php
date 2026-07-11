@@ -20,7 +20,7 @@ class Purge
         do_action('virtual_optimizer_before_purge_url', $url);
 
         $parsed = parse_url($url);
-        $host = $parsed['host'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $host = Utils::sanitize_host($parsed['host'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost');
         $path = $parsed['path'] ?? '/';
         $path = rtrim($path, '/') ?: '/';
         $path = ltrim($path, '/');

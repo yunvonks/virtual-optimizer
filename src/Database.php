@@ -223,7 +223,8 @@ class Database
         $count = 0;
 
         foreach ($tables as $table) {
-            $wpdb->query("OPTIMIZE TABLE `{$table[0]}`");
+            $safe_table = str_replace('`', '``', $table[0]);
+            $wpdb->query("OPTIMIZE TABLE `{$safe_table}`");
             $count++;
         }
 

@@ -128,7 +128,7 @@ class Image {
                 if (!is_dir($cache_dir)) {
                     wp_mkdir_p($cache_dir);
                 }
-                $response = wp_remote_get($src, ['timeout' => 10]);
+                $response = wp_remote_get($src, ['timeout' => 10, 'sslverify' => apply_filters('virtual_optimizer_sslverify', true)]);
                 if (wp_remote_retrieve_response_code($response) === 200) {
                     file_put_contents($local_path, wp_remote_retrieve_body($response));
                 }
@@ -153,7 +153,7 @@ class Image {
             if ($preloaded >= $count) break;
             $src = $img['data_src'] ?: $img['src'];
             if (empty($src) || strpos($src, 'data:image') === 0) continue;
-            $preload_tags .= '<link rel="preload" as="image" href="' . $src . '">' . "\n";
+            $preload_tags .= '<link rel="preload" as="image" href="' . esc_url($src) . '">' . "\n";
             $preloaded++;
         }
 

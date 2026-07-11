@@ -24,9 +24,8 @@ class AdminBar
 
         if (!is_admin()) {
             $current_url = self::get_current_url();
-
             $nonce = wp_create_nonce('wp_rest');
-            $escaped_url = esc_js($current_url);
+            $json_url = wp_json_encode($current_url);
 
             $wp_admin_bar->add_node([
                 'id' => 'virtual-optimizer-purge-page',
@@ -34,7 +33,7 @@ class AdminBar
                 'title' => 'Purge this page',
                 'href' => '#',
                 'meta' => [
-                    'onclick' => "event.preventDefault();fetch('/wp-json/virtual-optimizer/v1/purge',{method:'POST',headers:{'Content-Type':'application/json','X-WP-Nonce':'{$nonce}'},body:JSON.stringify({url:'{$escaped_url}'})}).then(r=>r.json()).then(d=>alert(d.message||d.code))",
+                    'onclick' => "event.preventDefault();fetch('/wp-json/virtual-optimizer/v1/purge',{method:'POST',headers:{'Content-Type':'application/json','X-WP-Nonce':'{$nonce}'},body:JSON.stringify({url:{$json_url}})}).then(r=>r.json()).then(d=>alert(d.message||d.code))",
                     'title' => 'Clear cache for this page only',
                 ],
             ]);

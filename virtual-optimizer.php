@@ -27,6 +27,10 @@ define('VIRTUAL_OPTIMIZER_CACHE_URL', WP_CONTENT_URL . '/cache/virtual-optimizer
 if (!is_dir(VIRTUAL_OPTIMIZER_CACHE_DIR)) {
     mkdir(VIRTUAL_OPTIMIZER_CACHE_DIR, 0755, true);
 }
+$cache_index = VIRTUAL_OPTIMIZER_CACHE_DIR . 'index.php';
+if (!file_exists($cache_index)) {
+    file_put_contents($cache_index, "<?php\n// Virtual Optimizer cache directory - do not access directly.");
+}
 
 add_action('init', function () {
     load_plugin_textdomain('virtual-optimizer', false, VIRTUAL_OPTIMIZER_PLUGIN_DIR . 'languages/');

@@ -24,7 +24,8 @@ if (!isset($_SERVER['REQUEST_METHOD']) || !in_array($_SERVER['REQUEST_METHOD'], 
 
 $cache_bypass_cookies = $config['cache_bypass_cookies'] ?? [];
 foreach ($cache_bypass_cookies as $cookie) {
-    if (preg_grep("/$cookie/i", array_keys($_COOKIE))) {
+    $pattern = '/' . preg_quote($cookie, '/') . '/i';
+    if (preg_grep($pattern, array_keys($_COOKIE))) {
         return;
     }
 }
@@ -41,7 +42,8 @@ $file_name = 'index';
 if ($is_user_logged_in && $cache_logged_in) {
     $file_name .= '-logged-in';
     if (isset($_COOKIE['virtual_optimizer_logged_in_roles'])) {
-        $file_name .= '-' . $_COOKIE['virtual_optimizer_logged_in_roles'];
+        $roles = preg_replace('/[^a-z0-9,\-]/i', '', $_COOKIE['virtual_optimizer_logged_in_roles']);
+        $file_name .= '-' . $roles;
     }
 }
 
@@ -67,7 +69,10 @@ if (!empty($query_strings)) {
     $file_name .= '-' . md5(serialize($query_strings));
 }
 
-$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$host = strtolower($_SERVER['HTTP_HOST'] ?? 'localhost');
+$host = preg_replace('/[^a-z0-9.\-:]/', '', $host);
+$host = trim($host, '.');
+$host = $host ?: 'localhost';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
 $path = strtolower(urldecode($path));
 $cache_file_path = WP_CONTENT_DIR . '/cache/virtual-optimizer/' . $host . $path . '/' . $file_name . '.html.gz';
@@ -91,7 +96,8 @@ $http_modified_since = isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])
     : 0;
 
 if ($http_modified_since >= $cache_last_modified) {
-    header($_SERVER['SERVER_PROTOCOL'] . ' 304 Not Modified', true, 304);
+    $protocol = isset($_SERVER['SERVER_PROTOCOL']) && preg_match('/^HTTP\/\d(?:\.\d)?$/', $_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.1';
+    header($protocol . ' 304 Not Modified', true, 304);
     exit();
 }
 

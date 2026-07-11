@@ -16,15 +16,17 @@ git archive HEAD --format=tar --prefix="$PLUGIN_SLUG/" | tar xf - -C "$BUILD_DIR
 
 echo "==> Installing composer dependencies (no dev)"
 cd "$BUILD_DIR/$PLUGIN_SLUG"
-composer install --no-dev --optimize-autoloader --quiet
+cp "$ORIG_DIR/composer.json" "$ORIG_DIR/composer.lock" ./ 2>/dev/null || true
+composer install --no-dev --optimize-autoloader --no-interaction --quiet
 rm -f composer.json composer.lock
 
 echo "==> Building zip"
 cd "$BUILD_DIR"
 zip -r "$ZIP_NAME" "$PLUGIN_SLUG" -x "*/.git/*" > /dev/null 2>&1
-cp "$ZIP_NAME" "$ORIG_DIR/"
+cp "$ZIP_NAME" "$ORIG_DIR/$ZIP_NAME"
 
 echo "==> Cleanup"
 rm -rf "$BUILD_DIR"
 
-echo "Done: $ZIP_NAME ($(du -h "$OLDPWD/$ZIP_NAME" | cut -f1))"
+SIZE=$(du -h "$ORIG_DIR/$ZIP_NAME" | cut -f1)
+echo "Done: $ORIG_DIR/$ZIP_NAME ($SIZE)"

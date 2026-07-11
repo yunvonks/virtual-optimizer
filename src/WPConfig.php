@@ -14,7 +14,7 @@ class WPConfig
 
         $content = file_get_contents($config_file);
 
-        if (preg_match('/define\s*\(\s*[\'"]' . preg_quote($name, '/') . '[\'"]\s*,/i', $content)) {
+        if (preg_match('/^\s*define\s*\(\s*[\'"]' . preg_quote($name, '/') . '[\'"]\s*,/im', $content)) {
             return;
         }
 

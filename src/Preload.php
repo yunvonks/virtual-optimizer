@@ -53,7 +53,7 @@ class Preload
             ],
             'user-agent' => $is_mobile ? Utils::$mobile_user_agent : Utils::$user_agent,
             'timeout' => 60,
-            'sslverify' => false,
+            'sslverify' => apply_filters('virtual_optimizer_sslverify', true),
             'redirection' => 0,
         ];
 

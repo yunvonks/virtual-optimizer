@@ -39,14 +39,14 @@ class AdvancedCache
         $config_export = var_export($config_data, true);
         $template = str_replace('CONFIG_TO_REPLACE', $config_export, $template);
 
-        $dropin_path = WP_CONTENT_DIR . '/advanced-cache-virtual-optimizer.php';
+        $dropin_path = WP_CONTENT_DIR . '/advanced-cache.php';
 
         file_put_contents($dropin_path, $template);
     }
 
     public static function remove_advanced_cache()
     {
-        $dropin_path = WP_CONTENT_DIR . '/advanced-cache-virtual-optimizer.php';
+        $dropin_path = WP_CONTENT_DIR . '/advanced-cache.php';
 
         if (file_exists($dropin_path)) {
             unlink($dropin_path);

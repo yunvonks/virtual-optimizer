@@ -34,10 +34,10 @@ class Caching
         setcookie('virtual_optimizer_logged_in_roles', '', time() - YEAR_IN_SECONDS, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
     }
 
-    public static function get_cache_path()
+    public static function get_cache_path($host = '', $path = '')
     {
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+        $host = $host ?: Utils::sanitize_host($_SERVER['HTTP_HOST'] ?? 'localhost');
+        $path = $path ?: parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
         $path = rtrim($path, '/') ?: '/';
         $path = ltrim($path, '/');
 
@@ -49,7 +49,8 @@ class Caching
         $file_name = 'index';
 
         if (Config::$config['cache_logged_in'] && isset($_COOKIE['virtual_optimizer_logged_in_roles'])) {
-            $file_name .= '-logged-in-' . $_COOKIE['virtual_optimizer_logged_in_roles'];
+            $roles = Utils::sanitize_cache_filename_part($_COOKIE['virtual_optimizer_logged_in_roles']);
+            $file_name .= '-logged-in-' . $roles;
         }
 
         $cookie = Utils::get_include_cookies();
@@ -100,7 +101,7 @@ class Caching
         }
 
         $compressed = gzencode($html, 9);
-        file_put_contents($cache_path . $file_name, $compressed);
+        file_put_contents($cache_path . $file_name, $compressed, LOCK_EX);
 
         if (!headers_sent()) {
             header('X-Cache: HIT');

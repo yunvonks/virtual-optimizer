@@ -66,13 +66,26 @@ class Utils
     {
         $external_domains = apply_filters('virtual_optimizer_selfhost_external_domains', self::EXTERNAL_DOMAINS);
 
-        if (!self::any_keywords_match_string($external_domains, $url)) {
+        $url_host = strtolower(parse_url($url, PHP_URL_HOST) ?: '');
+        $match = false;
+        foreach ($external_domains as $domain) {
+            $domain = strtolower($domain);
+            if ($url_host === $domain || substr($url_host, -strlen($domain) - 1) === '.' . $domain) {
+                $match = true;
+                break;
+            }
+        }
+        if (!$match) {
             return null;
         }
 
         $url_new = preg_match('/^https?:\/\//', $url) ? $url : 'https:' . $url;
 
-        $file_name = strtok(basename($url_new), '?');
+        $file_name = preg_replace('/[^a-zA-Z0-9._\-]/', '', strtok(basename($url_new), '?'));
+
+        if (!$file_name) {
+            return null;
+        }
 
         if (is_file(VIRTUAL_OPTIMIZER_CACHE_DIR . $file_name)) {
             return VIRTUAL_OPTIMIZER_CACHE_URL . $file_name;
@@ -80,6 +93,7 @@ class Utils
 
         $response = wp_remote_get($url_new, [
             'user-agent' => self::$user_agent,
+            'sslverify' => apply_filters('virtual_optimizer_sslverify', true),
             'httpversion' => '2.0',
         ]);
 
@@ -91,7 +105,7 @@ class Utils
         $extension = strpos($content_type, 'text/css') !== false ? 'css' : 'js';
 
         if (!preg_match('/\.(css|js)$/', $file_name)) {
-            $file_name = md5($url_new) . '.' . $extension;
+            $file_name = md5($url_new) . '.' . preg_replace('/[^a-z]/', '', $extension);
         }
 
         $content = wp_remote_retrieve_body($response);
@@ -115,6 +129,19 @@ class Utils
             '',
             $html
         );
+    }
+
+    public static function sanitize_host($host)
+    {
+        $host = strtolower($host);
+        $host = preg_replace('/[^a-z0-9.\-:]/', '', $host);
+        $host = trim($host, '.');
+        return $host ?: 'localhost';
+    }
+
+    public static function sanitize_cache_filename_part($value)
+    {
+        return preg_replace('/[^a-z0-9,\-]/i', '', $value);
     }
 
     public static function get_include_cookies()

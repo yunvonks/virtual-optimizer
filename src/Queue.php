@@ -196,7 +196,11 @@ class Queue
         $expected = self::build_runner_token($group, $callback);
 
         if (!hash_equals($expected, $token)) {
-            return new \WP_Error('invalid_token', 'Invalid token', ['status' => 403]);
+            $previous = floor((time() - 300) / 300);
+            $prev_token = hash_hmac('sha256', $group . '|' . $callback . '|' . $previous, wp_salt('auth'));
+            if (!hash_equals($prev_token, $token)) {
+                return new \WP_Error('invalid_token', 'Invalid token', ['status' => 403]);
+            }
         }
 
         $instance = new self($group, $callback);
@@ -386,13 +390,14 @@ class Queue
             ],
             'timeout' => 0.01,
             'blocking' => false,
-            'sslverify' => false,
+            'sslverify' => apply_filters('virtual_optimizer_sslverify', true),
         ]);
     }
 
     private static function build_runner_token($group, $callback)
     {
-        return hash_hmac('sha256', $group . '|' . $callback, wp_salt('auth'));
+        $window = floor(time() / 300);
+        return hash_hmac('sha256', $group . '|' . $callback . '|' . $window, wp_salt('auth'));
     }
 
     private function update_task_status($id, $status, $error = '')
