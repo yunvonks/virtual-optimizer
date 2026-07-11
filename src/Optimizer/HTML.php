@@ -53,4 +53,38 @@ class HTML {
         }
         return $positions;
     }
+
+    public static function minify($html)
+    {
+        // Strip HTML comments (preserve IE conditionals)
+        $html = preg_replace('/<!--(?!\s*(?:\[if [^\]]+\]|<!|>))(?:(?!-->).)*-->/s', '', $html);
+
+        // Preserve pre, textarea, code, script content
+        $preserve = [];
+        $html = preg_replace_callback(
+            '/<(pre|textarea|code|script)(\s[^>]*)?>.*?<\/\1>/is',
+            function($m) use (&$preserve) {
+                $key = '<!--VO_PRESERVE_' . count($preserve) . '-->';
+                $preserve[$key] = $m[0];
+                return $key;
+            },
+            $html
+        );
+
+        // Collapse multiple whitespace to single space
+        $html = preg_replace('/\s+/', ' ', $html);
+
+        // Remove whitespace between HTML tags
+        $html = preg_replace('/>\s+</', '><', $html);
+
+        // Trim
+        $html = trim($html);
+
+        // Restore preserved blocks
+        foreach ($preserve as $key => $value) {
+            $html = str_replace($key, $value, $html);
+        }
+
+        return $html;
+    }
 }

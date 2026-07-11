@@ -32,21 +32,14 @@ class Optimizer
             return $content;
         }
 
-        if (!isset($_SERVER['HTTP_X_VIRTUAL_OPTIMIZER_PRELOAD'])) {
-            $ignore_query_keys = apply_filters('virtual_optimizer_ignore_queries', Utils::IGNORE_QUERIES);
-            $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-            $request_uri = str_replace($path, strtolower($path), site_url($_SERVER['REQUEST_URI']));
-            $current_url = remove_query_arg($ignore_query_keys, $request_uri);
+        // Trigger preload for this URL
+        $ignore_query_keys = apply_filters('virtual_optimizer_ignore_queries', Utils::IGNORE_QUERIES);
+        $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $request_uri = str_replace($path, strtolower($path), site_url($_SERVER['REQUEST_URI']));
+        $current_url = remove_query_arg($ignore_query_keys, $request_uri);
 
-            if (Preload::is_ready()) {
-                Preload::preload_urls([$current_url]);
-            }
-
-            if (!headers_sent()) {
-                header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-            }
-
-            return $content;
+        if (Preload::is_ready()) {
+            Preload::preload_urls([$current_url]);
         }
 
         $html_obj = new HTML($content);
@@ -59,6 +52,9 @@ class Optimizer
         $content = Font::optimize_inline_google_fonts($content);
         $content = CSS::minify($content);
         $content = CSS::self_host_third_party_css($content);
+        $content = CSS::remove_unused_css($content);
+        $content = CSS::combine_stylesheets($content);
+        $content = CSS::delay_stylesheets($content);
         $content = IFrame::add_youtube_placeholder($content);
 
         Image::parse_images($content);
@@ -66,6 +62,7 @@ class Optimizer
         $content = Image::localhost_gravatars($content);
 
         $content = JavaScript::minify($content);
+        $content = JavaScript::defer_scripts($content);
         $content = JavaScript::self_host_third_party_js($content);
         $content = CSS::lazy_render($content);
         $content = IFrame::lazy_load($content);
@@ -86,6 +83,7 @@ class Optimizer
 
         $content = CDN::add_preconnect($content);
         $content = CDN::rewrite($content);
+        $content = HTML::minify($content);
 
         $content = apply_filters('virtual_optimizer_optimization_after', $content);
 

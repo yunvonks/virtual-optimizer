@@ -8,6 +8,7 @@ $baseDir = dirname($vendorDir);
 return array(
     'Wa72\\Url\\' => array($vendorDir . '/wa72/url/src/Wa72/Url'),
     'Virtual_Optimizer\\' => array($baseDir . '/src'),
+    'Sabberworm\\CSS\\' => array($vendorDir . '/sabberworm/php-css-parser/src'),
     'MatthiasMullie\\PathConverter\\' => array($vendorDir . '/matthiasmullie/path-converter/src'),
     'MatthiasMullie\\Minify\\' => array($vendorDir . '/matthiasmullie/minify/src'),
 );

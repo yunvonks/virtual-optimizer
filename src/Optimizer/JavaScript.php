@@ -17,10 +17,45 @@ class JavaScript {
         'mixpanel.com', 'intercom.io', 'drift.com', 'olark.com',
     ];
 
+    private static function get_atts_array($atts_string)
+    {
+        $atts_array = [];
+        if (!empty($atts_string)) {
+            preg_match_all('/([a-zA-Z0-9-_:.]+)(?:\s*=\s*(?|(?:"([^"]*)")|(?:\'([^\']*)\')|(\S+)))?/s', $atts_string, $matches, PREG_SET_ORDER);
+            foreach ($matches as $match) {
+                if (!empty($match[1])) {
+                    $atts_array[$match[1]] = $match[2] ?? '';
+                }
+            }
+        }
+        return $atts_array;
+    }
+
+    private static function get_atts_string($atts_array)
+    {
+        if (empty($atts_array)) {
+            return '';
+        }
+        $parts = [];
+        foreach ($atts_array as $name => $value) {
+            if ($value === '') {
+                $parts[] = $name;
+            } else {
+                $value = htmlspecialchars($value, ENT_COMPAT | ENT_HTML5, 'UTF-8', false);
+                $parts[] = sprintf('%s=\"%s\"', $name, $value);
+            }
+        }
+        return implode(' ', $parts);
+    }
+
     public static function init() {
     }
 
     public static function minify($html) {
+        if (empty(Config::$config['js_minify'])) {
+            return $html;
+        }
+        $html = preg_replace('/<!--(.*)-->/Uis', '', $html);
         $html = preg_replace_callback(
             '/<script(\s[^>]*)?>(.*?)<\/script>/is',
             function ($m) {
@@ -52,6 +87,16 @@ class JavaScript {
                 $before = $m[1] ?? '';
                 $url = $m[2];
                 $after = $m[3] ?? '';
+
+                // Skip jQuery
+                if (preg_match('/jquery(-migrate)?(-min)?\.js/i', $url)) {
+                    return $m[0];
+                }
+                // Skip third-party analytics/tracking
+                if (preg_match('/google-analytics|googletagmanager|facebook\.net|gtag|gstatic\.com/i', $url)) {
+                    return $m[0];
+                }
+
                 $site_host = parse_url(site_url(), PHP_URL_HOST);
                 $host = parse_url($url, PHP_URL_HOST);
                 if ($host !== $site_host) {
@@ -108,34 +153,133 @@ class JavaScript {
         return $html;
     }
 
-    public static function delay_scripts($html) {
-        $excluded = ['admin-ajax', 'recaptcha', 'jquery.js', 'jquery.min.js', 'jquery-core'];
+    public static function defer_scripts($html)
+    {
+        if (empty(Config::$config['js_defer'])) {
+            return $html;
+        }
 
         return preg_replace_callback(
             '/<script(\s[^>]*)src=["\']([^"\']+)["\']([^>]*)><\/script>/i',
-            function ($m) use ($excluded) {
+            function ($m) {
                 $before = $m[1] ?? '';
                 $src = $m[2];
                 $after = $m[3] ?? '';
 
-                foreach ($excluded as $pattern) {
-                    if (stripos($src, $pattern) !== false) {
+                if (empty($src)) {
+                    return $m[0];
+                }
+
+                $all_atts = $before . ' ' . $after;
+                if (preg_match('/\b(?:defer|async)\b/i', $all_atts)) {
+                    return $m[0];
+                }
+
+                if (preg_match('/jquery(-migrate)?(-min)?\.js/i', $src)) {
+                    return $m[0];
+                }
+
+                $excluded = ['admin-ajax', 'recaptcha/api.js', 'google-analytics', 'googletagmanager', 'facebook.net'];
+                $excludes = array_merge($excluded, Config::$config['js_delay_excludes'] ?? []);
+                foreach ($excludes as $pattern) {
+                    if (stripos($src, $pattern) !== false || stripos($all_atts, $pattern) !== false) {
                         return $m[0];
                     }
                 }
 
-                $attrs = $before . ' ' . $after;
-                if (stripos($attrs, 'data-no-delay') !== false) {
-                    return $m[0];
-                }
-
-                $new_attrs = preg_replace('/\s+(type|async|defer|crossorigin|integrity|referrerpolicy)=["\'][^"\']*["\']/i', '', $attrs);
-                $new_attrs = preg_replace('/\s+src=["\'][^"\']*["\']/i', '', $new_attrs);
-
-                return '<script' . $new_attrs . ' type="text/rocketscript" data-src="' . $src . '"></script>';
+                return '<script defer src="' . $src . '"' . $before . $after . '></script>';
             },
             $html
         );
+    }
+
+    public static function delay_scripts($html)
+    {
+        if (empty(Config::$config['js_delay'])) {
+            return $html;
+        }
+
+        $behavior = Config::$config['delay_js_behavior'] ?? 'individual';
+        $use_all_mode = ($behavior === 'all');
+        $print_delay_js = false;
+
+        // Default exclusions for "delay all" mode
+        $all_exclusions = [
+            'admin-ajax',
+            'recaptcha',
+            'jquery.js',
+            'jquery.min.js',
+            'jquery-core',
+            'jquery-migrate.min.js',
+            'wp-includes/js/dist/',
+            'wp-includes/js/wp-',
+            'wordfence',
+            'akismet',
+            'woocommerce-no-js',
+        ];
+        // Merge with user exclusions
+        $user_excludes = Config::$config['js_delay_excludes'] ?? [];
+        if (!empty($user_excludes) && is_array($user_excludes)) {
+            $all_exclusions = array_merge($all_exclusions, $user_excludes);
+        }
+
+        // Default inclusions for "individual" mode
+        $all_inclusions = Config::$config['js_delay_inclusions'] ?? [];
+
+        $html = preg_replace_callback(
+            '/<script(\s[^>]*)?src=["\']([^"\']+)["\']([^>]*)><\/script>/i',
+            function ($m) use ($use_all_mode, $all_exclusions, $all_inclusions, &$print_delay_js) {
+                $before = $m[1] ?? '';
+                $src = $m[2];
+                $after = $m[3] ?? '';
+                $all_atts = $before . ' ' . $after;
+
+                // Skip: already delayed
+                if (stripos($all_atts, 'data-vodelay') !== false || stripos($all_atts, 'type="text/plain"') !== false) {
+                    return $m[0];
+                }
+
+                // Skip: type="module"
+                if (stripos($all_atts, 'type="module"') !== false || stripos($all_atts, "type='module'") !== false) {
+                    return $m[0];
+                }
+
+                // Skip: data-no-delay attribute
+                if (stripos($all_atts, 'data-no-delay') !== false) {
+                    return $m[0];
+                }
+
+                if ($use_all_mode) {
+                    // Delay ALL except exclusions
+                    foreach ($all_exclusions as $pattern) {
+                        if (stripos($src, $pattern) !== false || stripos($all_atts, $pattern) !== false) {
+                            return $m[0];
+                        }
+                    }
+                } else {
+                    // Individual mode: only delay if matches inclusion
+                    $matched = false;
+                    foreach ($all_inclusions as $pattern) {
+                        if (stripos($src, $pattern) !== false || stripos($all_atts, $pattern) !== false) {
+                            $matched = true;
+                            break;
+                        }
+                    }
+                    if (!$matched) {
+                        return $m[0];
+                    }
+                }
+
+                $print_delay_js = true;
+                $new_attrs = preg_replace('/\s+(type|async|defer|crossorigin|integrity|referrerpolicy)=["\'][^"\']*["\']/i', '', $all_atts);
+                $new_attrs = preg_replace('/\s+src=["\'][^"\']*["\']/i', '', $new_attrs);
+
+                return '<script' . $new_attrs . ' type="text/plain" data-vodelay="1" data-src="' . $src . '"></script>';
+            },
+            $html
+        );
+
+        return $html;
     }
 
     public static function delay_third_party_scripts($html) {
@@ -173,7 +317,7 @@ class JavaScript {
                 $new_attrs = preg_replace('/\s+(type|async|defer|crossorigin|integrity)=["\'][^"\']*["\']/i', '', $attrs);
                 $new_attrs = preg_replace('/\s+src=["\'][^"\']*["\']/i', '', $new_attrs);
 
-                return '<script' . $new_attrs . ' type="text/rocketscript" data-src="' . $src . '"></script>';
+                return '<script' . $new_attrs . ' type="text/plain" data-vodelay="1" data-src="' . $src . '"></script>';
             },
             $html
         );
@@ -208,7 +352,7 @@ class JavaScript {
                 $new_attrs = preg_replace('/\s+(type|async|defer|crossorigin|integrity)=["\'][^"\']*["\']/i', '', $attrs);
                 $new_attrs = preg_replace('/\s+src=["\'][^"\']*["\']/i', '', $new_attrs);
 
-                return '<script' . $new_attrs . ' type="text/rocketscript" data-src="' . $src . '"></script>';
+                return '<script' . $new_attrs . ' type="text/plain" data-vodelay="1" data-src="' . $src . '"></script>';
             },
             $html
         );
@@ -216,13 +360,20 @@ class JavaScript {
 
     public static function inject_core_lib($html) {
         $lib = <<<'JSLIB'
-(function(){var e=function(){document.querySelectorAll('script[type="text/rocketscript"]').forEach(function(s){var n=document.createElement('script');if(s.src)n.src=s.src;else n.textContent=s.textContent;if(s.dataset.script){s.dataset.script.split(',').forEach(function(a){var p=a.split('=',2);n.setAttribute(p[0],p[1]||'')})}s.parentNode.replaceChild(n,s)})};if(document.querySelectorAll('script[type="text/rocketscript"]').length){document.addEventListener('scroll',e,{once:true});document.addEventListener('click',e,{once:true});document.addEventListener('touchstart',e,{once:true});document.addEventListener('mouseover',e,{once:true})}
+(function(){var e=function(){document.querySelectorAll('script[type="text/plain"][data-vodelay="1"]').forEach(function(s){var n=document.createElement('script');if(s.src)n.src=s.src;else n.textContent=s.textContent;if(s.dataset.script){s.dataset.script.split(',').forEach(function(a){var p=a.split('=',2);n.setAttribute(p[0],p[1]||'')})}s.parentNode.replaceChild(n,s)})};if(document.querySelectorAll('script[type="text/plain"][data-vodelay="1"]').length){document.addEventListener('scroll',e,{once:true});document.addEventListener('click',e,{once:true});document.addEventListener('touchstart',e,{once:true});document.addEventListener('mouseover',e,{once:true})}
 if('IntersectionObserver' in window){var o=new IntersectionObserver(function(e){e.forEach(function(e){if(e.isIntersecting){var t=e.target;if(t.dataset.src){t.src=t.dataset.src;delete t.dataset.src}if(t.dataset.srcset){t.srcset=t.dataset.srcset;delete t.dataset.srcset}if(t.dataset.bg){t.style.backgroundImage='url('+t.dataset.bg+')';delete t.dataset.bg}o.unobserve(t)}})});document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('[data-src],[data-srcset],[data-bg]').forEach(function(e){o.observe(e)})})}
 document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('[data-youtube-id]').forEach(function(e){e.addEventListener('click',function(){var id=e.dataset.youtubeId;var f=document.createElement('iframe');f.src='https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1';f.allow='autoplay; encrypted-media';f.style.width='100%';f.style.height='100%';f.style.border='0';e.textContent='';e.appendChild(f)})})})})();
 JSLIB;
 
         $script = '<script>' . $lib . '</script>';
-        return preg_replace('/<\/head>/i', $script . '</head>', $html, 1);
+
+        // Insert before </body> instead of </head>
+        $pos = strrpos($html, '</body>');
+        if ($pos !== false) {
+            $html = substr_replace($html, $script . '</body>', $pos, 7);
+        }
+
+        return $html;
     }
 
     public static function inject_speculationrules($html) {

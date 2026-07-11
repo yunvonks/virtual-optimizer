@@ -42,7 +42,7 @@ class Dashboard
 
         $config = Config::safe_config();
 
-        echo '<div id="virtual-optimizer-app"></div>';
+        echo '<div id="root"></div>';
         echo '<script>';
         echo 'window.virtual_optimizer = ' . wp_json_encode([
             'config' => $config,
