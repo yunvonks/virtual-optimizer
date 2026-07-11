@@ -93,6 +93,7 @@ No router library. View switching via `useState<'dashboard'|'settings'|'wizard'>
 - **Hover**: scale(1.02) + shadow increase, 200ms
 - **Active**: scale(0.98)
 - **Accent**: Vibrant gradient for hero/CTA, colorful badges
+- **Dashboard icons**: Black/white only (stroke #111, bg #f5f5f5)
 - **No dark mode**: `@media (prefers-color-scheme: dark)` forbidden
 
 ## File Structure
