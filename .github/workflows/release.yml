@@ -29,7 +29,7 @@ jobs:
           sed -i "s/define('VIRTUAL_OPTIMIZER_VERSION', '[^']*')/define('VIRTUAL_OPTIMIZER_VERSION', '${{ steps.version.outputs.version }}')/" "$PLUGIN_FILE"
 
       - name: Install dependencies
-        run: composer install --no-dev --optimize-autoloader --no-interaction
+        run: composer install --no-dev --optimize-autoloader --no-interaction && rm -f composer.json composer.lock
 
       - name: Build release zip
         run: |

@@ -5,6 +5,7 @@ PLUGIN_SLUG="virtual-optimizer"
 PLUGIN_FILE="$PLUGIN_SLUG.php"
 BUILD_DIR="/tmp/$PLUGIN_SLUG-build"
 ZIP_NAME="$PLUGIN_SLUG.zip"
+ORIG_DIR="$(pwd)"
 
 echo "==> Cleaning build dir"
 rm -rf "$BUILD_DIR"
@@ -16,11 +17,12 @@ git archive HEAD --format=tar --prefix="$PLUGIN_SLUG/" | tar xf - -C "$BUILD_DIR
 echo "==> Installing composer dependencies (no dev)"
 cd "$BUILD_DIR/$PLUGIN_SLUG"
 composer install --no-dev --optimize-autoloader --quiet
+rm -f composer.json composer.lock
 
 echo "==> Building zip"
 cd "$BUILD_DIR"
 zip -r "$ZIP_NAME" "$PLUGIN_SLUG" -x "*/.git/*" > /dev/null 2>&1
-mv "$ZIP_NAME" "$OLDPWD/"
+cp "$ZIP_NAME" "$ORIG_DIR/"
 
 echo "==> Cleanup"
 rm -rf "$BUILD_DIR"
