@@ -11,6 +11,6 @@ wp-content/
 /phpunit.xml*
 /tests/
 /docs/
-/composer.lock
+
 /Makefile
 /*.zip
