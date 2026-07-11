@@ -1,0 +1,66 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer:v2
+
+      - name: Read version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Update version in plugin header
+        run: |
+          PLUGIN_FILE="virtual-optimizer.php"
+          sed -i "s/Version: .*/Version: ${{ steps.version.outputs.version }}/" "$PLUGIN_FILE"
+          sed -i "s/define('VIRTUAL_OPTIMIZER_VERSION', '[^']*')/define('VIRTUAL_OPTIMIZER_VERSION', '${{ steps.version.outputs.version }}')/" "$PLUGIN_FILE"
+
+      - name: Install dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Build release zip
+        run: |
+          PLUGIN_SLUG="virtual-optimizer"
+          ZIP_NAME="$PLUGIN_SLUG-${{ steps.version.outputs.version }}.zip"
+          git archive HEAD --format=zip --prefix="$PLUGIN_SLUG/" -o "/tmp/archive.zip"
+          unzip -q "/tmp/archive.zip" -d "/tmp/build"
+          cp -r vendor "/tmp/build/$PLUGIN_SLUG/vendor"
+          cd /tmp/build
+          zip -r "$ZIP_NAME" "$PLUGIN_SLUG" -x "*/.git/*" "*/composer.*" "*/README.md" > /dev/null 2>&1
+          mv "$ZIP_NAME" "$GITHUB_WORKSPACE/"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | head -2 | tail -1 || echo "")
+          if [ -z "$PREVIOUS_TAG" ]; then
+            NOTES=$(cat CHANGELOG.md | sed -n '/^## \[/{p; :a; n; /^## \[/q; p; ba;}' | head -n -1)
+          else
+            NOTES=$(git log "$PREVIOUS_TAG..${{ github.ref_name }}" --oneline --no-decorate | while read line; do echo "- $line"; done)
+          fi
+          echo "notes<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$NOTES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Virtual Optimizer v${{ steps.version.outputs.version }}
+          body: ${{ steps.changelog.outputs.notes }}
+          files: virtual-optimizer-${{ steps.version.outputs.version }}.zip
+          draft: false
+          prerelease: false

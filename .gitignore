@@ -1,8 +1,16 @@
 node_modules/
 node/
 dashboard/node_modules/
+dashboard/dist/
 *.log
 .env
 .DS_Store
 Thumbs.db
 wp-content/
+/.phpunit*
+/phpunit.xml*
+/tests/
+/docs/
+/composer.lock
+/Makefile
+/*.zip
