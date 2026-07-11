@@ -11,4 +11,6 @@
 /tests export-ignore
 /docs export-ignore
 /Makefile export-ignore
+/composer.json export-ignore
 /composer.lock export-ignore
+/vendor/ export-ignore
