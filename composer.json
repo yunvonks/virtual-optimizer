@@ -1,0 +1,19 @@
+{
+  "name": "justinirul/virtual-optimizer",
+  "description": "Next-Generation WordPress Performance — Page Caching and Optimization Plugin",
+  "type": "wordpress-plugin",
+  "license": "GPL-3.0-or-later",
+  "autoload": {
+    "psr-4": {
+      "Virtual_Optimizer\\": "src/"
+    }
+  },
+  "require": {
+    "php": ">=7.4",
+    "matthiasmullie/minify": "^1.3",
+    "wa72/url": "^0.7"
+  },
+  "config": {
+    "optimize-autoloader": true
+  }
+}
