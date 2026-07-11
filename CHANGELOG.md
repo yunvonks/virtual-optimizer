@@ -2,6 +2,20 @@
 
 All notable changes to Virtual Optimizer are documented here.
 
+## [1.1.0] — 2026-07-11
+
+### Added
+- React 19 + Tailwind CSS v4 dashboard with full admin interface
+- Dashboard settings view with caching, optimization, CDN, and database tabs
+- Dashboard wizard for step-by-step plugin configuration
+- Cache analytics dashboard with hit/miss ratio, cached pages, and size metrics
+- Cache queue status monitor (pending, processing, failed tasks)
+- Plugin logo and branding assets
+
+### Changed
+- Dashboard.php backend integration with WP REST API + nonce
+- Plugin URI updated to github.com/yunvonks/virtual-optimizer
+
 ## [1.0.0] — 2026-07-11
 
 ### Added

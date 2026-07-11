@@ -47,6 +47,8 @@ class Dashboard
         echo 'window.virtual_optimizer = ' . wp_json_encode([
             'config' => $config,
             'version' => VIRTUAL_OPTIMIZER_VERSION,
+            'rest_url' => rest_url('virtual-optimizer/v1/'),
+            'nonce' => wp_create_nonce('wp_rest'),
         ]);
         echo ';</script>';
     }
