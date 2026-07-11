@@ -4,7 +4,7 @@
  * Plugin Name: Virtual Optimizer
  * Plugin URI: https://github.com/yunvonks/virtual-optimizer
  * Description: Next-Generation WordPress Performance — Page Caching, Frontend Optimization, and Core Web Vitals on Autopilot.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Requires PHP: 7.4
  * Requires at least: 5.0
  * Author: Fakhrur
@@ -16,7 +16,7 @@ defined('ABSPATH') or die;
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-define('VIRTUAL_OPTIMIZER_VERSION', '1.1.0');
+define('VIRTUAL_OPTIMIZER_VERSION', '1.2.0');
 define('VIRTUAL_OPTIMIZER_FILE', __FILE__);
 define('VIRTUAL_OPTIMIZER_FILE_NAME', plugin_basename(__FILE__));
 define('VIRTUAL_OPTIMIZER_PLUGIN_URL', plugin_dir_url(__FILE__));
